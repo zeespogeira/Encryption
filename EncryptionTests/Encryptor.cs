@@ -41,7 +41,7 @@ namespace EncryptionTests
         }
 
 
-        public string RsaEncrypt(string textToEncrypt, string publicKeyString)
+        public string RsaEncryptFromXMLKey(string textToEncrypt, string publicKeyString)
         {
             var bytesToEncrypt = Encoding.UTF8.GetBytes(textToEncrypt);
 
@@ -61,7 +61,7 @@ namespace EncryptionTests
             }
         }
 
-        public string RsaDecrypt(string textToDecrypt, string privateKeyString)
+        public string RsaDecryptFromXMLKey(string textToDecrypt, string privateKeyString)
         {
             var bytesToDescrypt = Encoding.UTF8.GetBytes(textToDecrypt);
 
@@ -86,42 +86,48 @@ namespace EncryptionTests
         }
 
 
-        //public byte[] RsaEncrypt(byte[] Data, RSAParameters RSAKey, bool DoOAEPPadding)
-        //{
-        //    try
-        //    {
-        //        byte[] encryptedData;
-        //        using (RSACryptoServiceProvider RSA = new RSACryptoServiceProvider())
-        //        {
-        //            RSA.ImportParameters(RSAKey);
-        //            encryptedData = RSA.Encrypt(Data, DoOAEPPadding);
-        //        }
-        //        return encryptedData;
-        //    }
-        //    catch (CryptographicException e)
-        //    {
-        //        Console.WriteLine(e.Message);
-        //        return null;
-        //    }
-        //}
+        public string RsaDecrypt(string encryptedText, string decryptKey)
+        {
+            using (var rsa = new RSACryptoServiceProvider(2048))
+            {
+                try
+                {
+                    var byteArray = Convert.FromBase64String(decryptKey);
+                    rsa.ImportRSAPrivateKey(byteArray, out _);
 
-        //public byte[] RsaDecrypt(byte[] Data, RSAParameters RSAKey, bool DoOAEPPadding)
-        //{
-        //    try
-        //    {
-        //        byte[] decryptedData;
-        //        using (RSACryptoServiceProvider RSA = new RSACryptoServiceProvider())
-        //        {
-        //            RSA.ImportParameters(RSAKey);
-        //            decryptedData = RSA.Decrypt(Data, DoOAEPPadding);
-        //        }
-        //        return decryptedData;
-        //    }
-        //    catch (CryptographicException e)
-        //    {
-        //        Console.WriteLine(e.ToString());
-        //        return null;
-        //    }
-        //}
+                    var resultBytes = Convert.FromBase64String(encryptedText);
+                    var decryptedBytes = rsa.Decrypt(resultBytes, true);
+                    var decryptedData = Encoding.UTF8.GetString(decryptedBytes);
+                    return decryptedData;
+                }
+                finally
+                {
+                    rsa.PersistKeyInCsp = false;
+                }
+            }
+        }
+
+        public string RsaEncrypt(string text, string encryptKey)
+        {
+            var bytesToEncrypt = Encoding.UTF8.GetBytes(text);
+
+            using (var rsa = new RSACryptoServiceProvider(2048))
+            {
+                try
+                {
+                    var byteArray = Convert.FromBase64String(encryptKey);
+                    rsa.ImportSubjectPublicKeyInfo(byteArray, out _);
+
+                    var encryptedData = rsa.Encrypt(bytesToEncrypt, true);
+                    var base64Encrypted = Convert.ToBase64String(encryptedData);
+                    return base64Encrypted;
+                }
+                finally
+                {
+                    rsa.PersistKeyInCsp = false;
+                }
+            }
+        }
+
     }
 }
